@@ -4,7 +4,14 @@ class Atom(Exception):
 def new_atom(atom):
     return type(atom, (Atom,), {})
 
-def atom_try(atom_map):
+def atom_try(entity_map):
+    atom_map = {}
+    for entity in entity_map:
+        if isinstance(entity, str):
+            atom_map[entity] = entity_map[entity]
+        else:
+            for atom in entity:
+                atom_map[atom] = entity_map[entity]
     def inner_wrapper(func):
         def wrapped(self, *args, **kwargs):
             try:

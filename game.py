@@ -1,4 +1,4 @@
-from atoms import AtomPasser, atom_try, atom_raise
+from atoms import AtomPasser, atom_try
 import random
 
 class SimpleGame(AtomPasser):
@@ -14,7 +14,7 @@ class SimpleGame(AtomPasser):
     def play_a_game(self):
         self.take_a_guess()
 
-    @atom_try({'Wrong': 'take_a_guess', 'ValueError': 'take_a_guess', 'Again': 'take_a_guess'})
+    @atom_try({('Wrong', 'ValueError', 'Again'): 'take_a_guess'})
     def take_a_guess(self):
         guess = input('Take a guess: ')
         self.check(int(guess) == self.number, 'Wrong', 'Correct')
