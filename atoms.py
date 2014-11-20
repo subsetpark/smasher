@@ -20,7 +20,7 @@ def atom_try(entity_map):
                 exc_name = exc.__class__.__name__
                 if exc_name in atom_map:
                     route = atom_map[exc_name]
-                    return self.evaluate_msg(route)
+                    self.evaluate_msg(route)
                 else:
                     raise exc
         return wrapped
@@ -42,11 +42,11 @@ class AtomPasser:
 
     def evaluate_msg(self, msg):
         if msg in self.atoms:
-            return self.pass_atom(msg)
+            self.pass_atom(msg)
         elif isinstance(msg, str):
-            return getattr(self, msg)()
+            getattr(self, msg)()
         else:
-            return msg()
+            msg()
 
     def reraise(self):
         raise self.current_atom()
