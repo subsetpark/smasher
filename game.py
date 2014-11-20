@@ -14,10 +14,15 @@ class SimpleGame(AtomPasser):
     def play_a_game(self):
         self.take_a_guess()
 
-    @atom_try({('Wrong', 'ValueError', 'Again'): 'take_a_guess'})
+    @atom_try({('Wrong', 'ValueError', 'Again'): 'take_a_guess', 
+                'Correct': 'correct'})
     def take_a_guess(self):
         guess = input('Take a guess: ')
         self.check(int(guess) == self.number, 'Wrong', 'Correct')
+
+    def correct(self):
+        self.points += 1
+        self.check(self.points >= 5, 'take_a_guess', 'Correct')
 
 if __name__ == '__main__':
     g = SimpleGame()
