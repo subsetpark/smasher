@@ -26,9 +26,6 @@ def atom_try(entity_map):
         return wrapped
     return inner_wrapper
 
-def atom_raise(atom):
-    raise atom()
-
 class AtomPasser:
     def __init__(self):
         self.current_atom = None
