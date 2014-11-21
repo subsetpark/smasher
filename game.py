@@ -1,12 +1,12 @@
-from atoms import AtomPasser, atom_try
+from atoms import Actor, atom_try, Atoms
 import random
 
 
-class SimpleGame(AtomPasser):
+class SimpleGame(Actor):
     atoms = ['Correct', 'Wrong', 'Win', 'KeepGoing', 'Done']
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, a):
+        super().__init__(a)
         self.points = 0
 
     def play_a_game(self):
@@ -20,12 +20,13 @@ class SimpleGame(AtomPasser):
                'Done': lambda: print('Good job!')})
     def take_a_guess(self):
         guess = input('Take a guess: ')
-        self.check(int(guess) == self.number, 'Wrong', 'Correct')
+        self.pass_if(int(guess) == self.number, 'Wrong', 'Correct')
 
     def correct(self):
         self.points += 1
-        self.check(self.points >= 5, 'KeepGoing', 'Done')
+        self.pass_if(self.points >= 5, 'KeepGoing', 'Done')
 
 if __name__ == '__main__':
-    g = SimpleGame()
+    a = Atoms()
+    g = SimpleGame(a)
     g.play_a_game()

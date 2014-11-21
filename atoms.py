@@ -30,25 +30,27 @@ def atom_try(entity_map):
     return inner_wrapper
 
 
-class AtomPasser:
+class Actor:
 
-    def __init__(self):
+    def __init__(self, a):
         for atom in self.atoms:
             new_obj = new_atom(atom)
             setattr(self, atom, new_obj)
+            a.atoms.append(atom)
+        self.namespace = a
 
     def pass_atom(self, atom):
         raise getattr(self, atom)()
 
     def evaluate_msg(self, msg):
-        if msg in self.atoms:
+        if msg in self.namespace.atoms:
             self.pass_atom(msg)
         elif isinstance(msg, str):
             getattr(self, msg)()
         else:
             msg()
 
-    def check(self, cond, false_atom, true_atom=None):
+    def pass_if(self, cond, false_atom, true_atom=None):
         if not cond:
             self.evaluate_msg(false_atom)
         if true_atom:
@@ -58,6 +60,8 @@ class AtomPasser:
 class Atoms:
 
     def __init__(self, *atoms):
+        self.atoms = []
         for atom in atoms:
             new_obj = new_atom(atom)
             setattr(self, atom, new_obj)
+            self.atoms.append(atom)
