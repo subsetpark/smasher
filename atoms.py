@@ -20,8 +20,6 @@ def atom_try(entity_map):
             try:
                 func(self, *args, **kwargs)
             except Exception as exc:
-                import sys
-                print sys.exc_info()
                 exc_name = exc.__class__.__name__
                 if exc_name in atom_map:
                     route = atom_map[exc_name]
