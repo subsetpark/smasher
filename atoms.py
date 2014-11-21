@@ -6,7 +6,7 @@ def new_atom(atom):
     return type(atom, (Atom,), {})
 
 
-def atom_try(entity_map):
+def dispatch(entity_map):
     atom_map = {}
     for entity in entity_map:
         if isinstance(entity, str):
@@ -23,21 +23,35 @@ def atom_try(entity_map):
                 exc_name = exc.__class__.__name__
                 if exc_name in atom_map:
                     route = atom_map[exc_name]
-                    atom_try(entity_map)(self.__class__.evaluate_msg)(self, route)
+                    dispatch(entity_map)(self.__class__.evaluate_msg)(self, route)
                 else:
                     raise exc
         return wrapped
     return inner_wrapper
 
 
+class Atoms:
+
+    def __init__(self, *atoms):
+        self.atoms = []
+        for atom in atoms:
+            new_obj = new_atom(atom)
+            setattr(self, atom, new_obj)
+            self.atoms.append(atom)
+
 class Actor:
 
-    def __init__(self, a):
+    atoms = []
+
+    def __init__(self):
+        self.namespace = None
         for atom in self.atoms:
             new_obj = new_atom(atom)
             setattr(self, atom, new_obj)
-            a.atoms.append(atom)
-        self.namespace = a
+
+    def register(self, namespace):
+        self.namespace = namespace
+        namespace.atoms.extend(self.atoms)
 
     def pass_atom(self, atom):
         raise getattr(self, atom)()
@@ -50,18 +64,8 @@ class Actor:
         else:
             msg()
 
-    def pass_if(self, cond, false_atom, true_atom=None):
-        if not cond:
-            self.evaluate_msg(false_atom)
-        if true_atom:
+    def pass_if(self, cond, true_atom, false_atom=None):
+        if cond:
             self.evaluate_msg(true_atom)
-
-
-class Atoms:
-
-    def __init__(self, *atoms):
-        self.atoms = []
-        for atom in atoms:
-            new_obj = new_atom(atom)
-            setattr(self, atom, new_obj)
-            self.atoms.append(atom)
+        elif false_atom:
+            self.evaluate_msg(false_atom)
