@@ -47,7 +47,7 @@ def dispatch(entity_map):
                     if isinstance(route, tuple):
                         typecheck(exc.payload, route[1])
                         route = route[0]
-                        args = args + (exc.payload,)
+                        args = args + make_sequence(exc.payload)
                     else:
                         args = ()
                     dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
