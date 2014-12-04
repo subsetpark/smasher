@@ -18,28 +18,33 @@ class SimpleGame(Actor):
 
     @dispatch({('Wrong', 'ValueError', 'Again'): 'take_a_guess',
                'Correct': 'correct',
-               'KeepGoing': 'play_a_game'})
+               'KeepGoing': 'play_a_game',
+               'Guess': ('evaluate', int)})
     def take_a_guess(self):
-        guess = self.server.get_guess()
+        self.server.get_guess()
+
+    def evaluate(self, guess):
         self.pass_if(int(guess) == self.number, 'Correct', 'Wrong')
 
     def correct(self):
         self.points += 1
         self.pass_if(self.points >= 5, 'Done', 'KeepGoing')
 
+
 class Alphonse(Actor):
-    atoms = ['NewGame', 'Finished']
+    atoms = ['Guess', 'NewGame', 'Finished']
 
     def __init__(self):
         super().__init__()
         self.plays = 0
 
     def guess(self):
-        return random.choice(range(10))
+        self.pass_atom('Guess', random.choice(range(10)))
 
     def start(self):
         print('now starting. {}'.format(self.plays))
         self.pass_if(self.plays >= 3, 'Finished', 'NewGame')
+
 
 class Server(Actor):
 
@@ -53,7 +58,7 @@ class Server(Actor):
         self.game.register(namespace)
 
     def get_guess(self):
-        return self.player.guess() # TODO: Raise with values
+        self.player.guess()
 
     @dispatch({'NewGame': 'new_game',
                'Done': 'run',
@@ -68,11 +73,11 @@ class Server(Actor):
 
 if __name__ == '__main__':
     a = Atoms()
-    
+
     p = Alphonse()
     p.register(a)
 
     s = Server(p)
     s.register(a)
-    
+
     s.run()

@@ -1,9 +1,30 @@
+import collections
+
 class Atom(Exception):
-    pass
+
+    def __init__(self, *args):
+        if args:
+            if len(args) > 1:
+                self.payload = args
+            else:
+                self.payload = args[0]
 
 
 def new_atom(atom):
     return type(atom, (Atom,), {})
+
+def make_sequence(element):
+    if not isinstance(element, collections.Iterable):
+        return (element, )
+    elif not isinstance(element, tuple):
+        return tuple(element)
+    return element
+
+def typecheck(payload, types):
+    for arg, type in zip(make_sequence(payload), make_sequence(types)):
+        if not isinstance(payload, type):
+            if type:
+                raise TypeError('{} must be of type {}'.format(payload, type))
 
 
 def dispatch(entity_map):
@@ -23,7 +44,13 @@ def dispatch(entity_map):
                 exc_name = exc.__class__.__name__
                 if exc_name in atom_map:
                     route = atom_map[exc_name]
-                    dispatch(entity_map)(self.__class__.evaluate_msg)(self, route)
+                    if isinstance(route, tuple):
+                        typecheck(exc.payload, route[1])
+                        route = route[0]
+                        args = args + (exc.payload,)
+                    else:
+                        args = ()
+                    dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
                 else:
                     raise exc
         return wrapped
@@ -39,6 +66,7 @@ class Atoms:
             setattr(self, atom, new_obj)
             self.atoms.append(atom)
 
+
 class Actor:
 
     atoms = []
@@ -53,16 +81,16 @@ class Actor:
         self.namespace = namespace
         namespace.atoms.extend(self.atoms)
 
-    def pass_atom(self, atom):
-        raise getattr(self, atom)()
+    def pass_atom(self, atom, *args):
+        raise getattr(self, atom)(*args)
 
-    def evaluate_msg(self, msg):
+    def evaluate_msg(self, msg, *args, **kwargs):
         if msg in self.namespace.atoms:
             self.pass_atom(msg)
         elif isinstance(msg, str):
-            getattr(self, msg)()
+            getattr(self, msg)(*args, **kwargs)
         else:
-            msg()
+            msg(*args, **kwargs)
 
     def pass_if(self, cond, true_atom, false_atom=None):
         if cond:
