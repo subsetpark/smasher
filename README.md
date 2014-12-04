@@ -1,7 +1,7 @@
 smasher
 =======
 
-# Typed Message Passing for Python
+# Typed Exception-Based Message Passing for Python
 
 At some point in the recent past, I found myself enjoying the process of 
 creating my own exceptions for specific business logic needs at my Python 
