@@ -1,4 +1,6 @@
 import collections
+import builtins
+
 
 class Atom(Exception):
 
@@ -10,8 +12,13 @@ class Atom(Exception):
                 self.payload = args[0]
 
 
+class AtomError(Exception):
+    pass
+
+
 def new_atom(atom):
     return type(atom, (Atom,), {})
+
 
 def make_sequence(element):
     if not isinstance(element, collections.Iterable):
@@ -20,14 +27,20 @@ def make_sequence(element):
         return tuple(element)
     return element
 
+
 def typecheck(payload, types):
-    for arg, type in zip(make_sequence(payload), make_sequence(types)):
-        if not isinstance(payload, type):
-            if type:
-                raise TypeError('{} must be of type {}'.format(payload, type))
+    for arg, desired_type in zip(make_sequence(payload), make_sequence(types)):
+        if not isinstance(payload, desired_type):
+            if desired_type:
+                raise TypeError('Type mismatch for {}: got {}, excpected {}'.format(payload, type(5), desired_type))
 
 
 def dispatch(entity_map):
+    """
+    This is the dispatch decorator designed 
+    to be used on Actor methods.
+    """
+    # Build list of atom names we're looking for
     atom_map = {}
     for entity in entity_map:
         if isinstance(entity, str):
@@ -38,21 +51,19 @@ def dispatch(entity_map):
 
     def inner_wrapper(func):
         def wrapped(self, *args, **kwargs):
+            # Validate dispatch
+            dispatch_map = {self.get_atom(atom_name): value for atom_name, value in atom_map.items()}
             try:
                 func(self, *args, **kwargs)
-            except Exception as exc:
-                exc_name = exc.__class__.__name__
-                if exc_name in atom_map:
-                    route = atom_map[exc_name]
-                    if isinstance(route, tuple):
-                        typecheck(exc.payload, route[1])
-                        route = route[0]
-                        args = args + make_sequence(exc.payload)
-                    else:
-                        args = ()
-                    dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
+            except tuple(dispatch_map.keys()) as exc:
+                route = dispatch_map[exc.__class__]
+                if isinstance(route, tuple):
+                    typecheck(exc.payload, route[1])
+                    route = route[0]
+                    args = args + make_sequence(exc.payload)
                 else:
-                    raise exc
+                    args = ()
+                dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
         return wrapped
     return inner_wrapper
 
@@ -60,11 +71,13 @@ def dispatch(entity_map):
 class Atoms:
 
     def __init__(self, *atoms):
-        self.atoms = []
+        self.atom_names = []
+        self.globals = {}
         for atom in atoms:
-            new_obj = new_atom(atom)
-            setattr(self, atom, new_obj)
-            self.atoms.append(atom)
+            new_class = new_atom(atom)
+            setattr(self, atom, new_class)
+            self.atom_names.append(atom)
+            self.globals[a] = new_class
 
 
 class Actor:
@@ -74,18 +87,30 @@ class Actor:
     def __init__(self):
         self.namespace = None
         for atom in self.atoms:
-            new_obj = new_atom(atom)
-            setattr(self, atom, new_obj)
+            new_class = new_atom(atom)
+            setattr(self, atom, new_class)
 
     def register(self, namespace):
         self.namespace = namespace
-        namespace.atoms.extend(self.atoms)
+        namespace.atom_names.extend(self.atoms)
+        namespace.globals.update({a: getattr(self, a) for a in self.atoms})
+
+    def get_atom(self, atom_name):
+        if atom_name in self.namespace.atom_names:
+            return self.namespace.globals[atom_name]
+        try:
+            builtin = getattr(builtins, atom_name)
+            if issubclass(builtin, Exception):
+                return builtin
+        except AttributeError:
+            print(self.namespace.atom_names)
+            raise AtomError('Atom {} not found.'.format(atom_name))
 
     def pass_atom(self, atom, *args):
         raise getattr(self, atom)(*args)
 
     def evaluate_msg(self, msg, *args, **kwargs):
-        if msg in self.namespace.atoms:
+        if msg in self.namespace.atom_names:
             self.pass_atom(msg)
         elif isinstance(msg, str):
             getattr(self, msg)(*args, **kwargs)

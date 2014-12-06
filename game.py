@@ -16,7 +16,7 @@ class SimpleGame(Actor):
         print('Game points: {}'.format(self.points))
         self.take_a_guess()
 
-    @dispatch({('Wrong', 'ValueError', 'Again'): 'take_a_guess',
+    @dispatch({('Wrong', 'ValueError'): 'take_a_guess',
                'Correct': 'correct',
                'KeepGoing': 'play_a_game',
                'Guess': ('evaluate', int)})
