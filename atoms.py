@@ -30,8 +30,8 @@ def make_sequence(element):
 
 def typecheck(payload, types):
     for arg, desired_type in zip(make_sequence(payload), make_sequence(types)):
-        if not isinstance(payload, desired_type):
-            if desired_type:
+        if desired_type:
+            if not isinstance(payload, desired_type):
                 raise TypeError('Type mismatch for {}: got {}, excpected {}'.format(payload, type(5), desired_type))
 
 
