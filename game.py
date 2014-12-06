@@ -3,7 +3,7 @@ import random
 
 
 class SimpleGame(Actor):
-    atoms = ['Correct', 'Wrong', 'Win', 'KeepGoing', 'Done']
+    atoms = ['Correct', 'Wrong', 'Win', 'KeepGoing', 'GameOver']
 
     def __init__(self, server):
         super().__init__()
@@ -12,8 +12,8 @@ class SimpleGame(Actor):
 
     def play_a_game(self):
         self.number = random.choice(range(10))
-        print(self.number)
-        print('Points: {}'.format(self.points))
+        print('Number to guess: {}'.format(self.number))
+        print('Game points: {}'.format(self.points))
         self.take_a_guess()
 
     @dispatch({('Wrong', 'ValueError', 'Again'): 'take_a_guess',
@@ -28,7 +28,7 @@ class SimpleGame(Actor):
 
     def correct(self):
         self.points += 1
-        self.pass_if(self.points >= 5, 'Done', 'KeepGoing')
+        self.pass_if(self.points >= 5, 'GameOver', 'KeepGoing')
 
 
 class Alphonse(Actor):
@@ -42,8 +42,8 @@ class Alphonse(Actor):
         self.pass_atom('Guess', random.choice(range(10)))
 
     def start(self):
-        print('now starting. {}'.format(self.plays))
-        self.pass_if(self.plays >= 3, 'Finished', 'NewGame')
+        self.plays += 1
+        self.pass_if(self.plays > 3, 'Finished', 'NewGame')
 
 
 class Server(Actor):
@@ -61,15 +61,16 @@ class Server(Actor):
         self.player.guess()
 
     @dispatch({'NewGame': 'new_game',
-               'Done': 'run',
+               'GameOver': 'run',
                'Finished': lambda: print('Good job!')})
     def run(self):
         self.player.start()
 
     def new_game(self):
-        self.player.plays += 1
+        print('Player starting a new game. play #{}.'.format(self.player.plays))
         self.game.points = 0
         self.game.play_a_game()
+
 
 if __name__ == '__main__':
     a = Atoms()
