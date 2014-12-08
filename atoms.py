@@ -16,13 +16,6 @@ class AtomError(Exception):
     pass
 
 
-def new_atom(atom, origin=None):
-    cls = type(atom, (Atom,), {})
-    if origin is not None:
-        cls.__module__ = origin.__class__.__name__ # Is this kosher?
-    return cls
-
-
 def typecheck(payload, types):
     for arg, desired_type in zip(make_sequence(payload), make_sequence(types)):
         if desired_type:
@@ -62,41 +55,33 @@ def dispatch(entity_map):
         return wrapped
     return inner_wrapper
 
-
-class Atoms:
-
-    def __init__(self, *atoms):
-        self.atom_names = []
-        self.globals = {}
-        for atom in atoms:
-            new_class = new_atom(atom)
-            self.atom_names.append(atom)
-            self.globals[a] = new_class
-
-
 class Actor:
 
     atoms = []
     initialize_map = {}
+    namespace = []
+    globals = {}
 
     def __init__(self):
         self.atom_map = {}
-        self.namespace = None
         if not self.initialize_map.get(self.__class__):
             for atom in self.atoms:
-                new_class = new_atom(atom, origin=self)
+                new_class = self.new_atom(atom)
                 self.atom_map[atom] = new_class
             self.initialize_map[self.__class__] = True
-        print('{}, {}'.format(self.__class__.__name__, self.atom_map))
 
-    def register(self, namespace):
-        self.namespace = namespace
-        namespace.atom_names.extend(self.atoms)
-        namespace.globals.update({a: self.atom_map[a] for a in self.atoms})
+    def new_atom(self, atom):
+        if atom in self.namespace:
+            raise AtomError('{} could not create Atom {}; it already exists.'.format(self, atom))
+        self.namespace.append(atom)
+        cls = type(atom, (Atom,), {})
+        cls.__module__ = self.__class__.__name__ # Is this kosher?
+        self.globals[atom] = cls
+        return cls
 
     def get_atom(self, atom_name):
-        if atom_name in self.namespace.atom_names:
-            return self.namespace.globals[atom_name]
+        if atom_name in self.namespace:
+            return self.globals[atom_name]
         try:
             builtin = getattr(builtins, atom_name)
             if issubclass(builtin, Exception):

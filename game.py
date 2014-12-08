@@ -1,4 +1,4 @@
-from atoms import Actor, dispatch, Atoms
+from atoms import Actor, dispatch
 import random
 
 
@@ -73,12 +73,6 @@ class Server(Actor):
 
 
 if __name__ == '__main__':
-    a = Atoms()
-
     p = Alphonse()
-    p.register(a)
-
     s = Server(p)
-    s.register(a)
-
     s.run()
