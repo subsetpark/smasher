@@ -56,30 +56,29 @@ def dispatch(entity_map):
     return inner_wrapper
 
 class Actor:
-
     atoms = []
-    initialize_map = {}
-    globals = {}
+    _initialize_map = {}
+    _globals = {}
 
     def __init__(self):
         self.atom_map = {}
-        if not self.initialize_map.get(self.__class__):
+        if not self._initialize_map.get(self.__class__):
             for atom in self.atoms:
                 new_class = self.new_atom(atom)
                 self.atom_map[atom] = new_class
-            self.initialize_map[self.__class__] = True
+            self._initialize_map[self.__class__] = True
 
     def new_atom(self, atom_name):
-        if atom_name in self.globals:
+        if atom_name in self._globals:
             raise AtomError('{} could not create Atom {}; it already exists.'.format(self, atom_name))
         cls = type(atom_name, (Atom,), {})
         cls.__module__ = self.__class__.__name__ # Is this kosher?
-        self.globals[atom_name] = cls
+        self._globals[atom_name] = cls
         return cls
 
     def get_atom(self, atom_name):
-        if atom_name in self.globals:
-            return self.globals[atom_name]
+        if atom_name in self._globals:
+            return self._globals[atom_name]
         try:
             builtin = getattr(builtins, atom_name)
             if issubclass(builtin, Exception):
