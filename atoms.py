@@ -19,8 +19,8 @@ class AtomError(Exception):
 def typecheck(payload, types):
     for arg, desired_type in zip(make_sequence(payload), make_sequence(types)):
         if desired_type:
-            if not isinstance(payload, desired_type):
-                raise TypeError('Type mismatch for {}: got {}, excpected {}'.format(payload, type(5), desired_type))
+            if not isinstance(arg, desired_type):
+                raise TypeError('Type mismatch for {}: got {}, excpected {}'.format(arg, type(5), desired_type))
 
 
 def dispatch(entity_map):
@@ -55,6 +55,7 @@ def dispatch(entity_map):
         return wrapped
     return inner_wrapper
 
+
 class Actor:
     atoms = []
     _initialize_map = {}
@@ -72,7 +73,7 @@ class Actor:
         if atom_name in self._globals:
             raise AtomError('{} could not create Atom {}; it already exists.'.format(self, atom_name))
         cls = type(atom_name, (Atom,), {})
-        cls.__module__ = self.__class__.__name__ # Is this kosher?
+        cls.__module__ = self.__class__.__name__  # Is this kosher?
         self._globals[atom_name] = cls
         return cls
 
