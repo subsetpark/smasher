@@ -59,7 +59,6 @@ class Actor:
 
     atoms = []
     initialize_map = {}
-    namespace = []
     globals = {}
 
     def __init__(self):
@@ -70,17 +69,16 @@ class Actor:
                 self.atom_map[atom] = new_class
             self.initialize_map[self.__class__] = True
 
-    def new_atom(self, atom):
-        if atom in self.namespace:
-            raise AtomError('{} could not create Atom {}; it already exists.'.format(self, atom))
-        self.namespace.append(atom)
-        cls = type(atom, (Atom,), {})
+    def new_atom(self, atom_name):
+        if atom_name in self.globals:
+            raise AtomError('{} could not create Atom {}; it already exists.'.format(self, atom_name))
+        cls = type(atom_name, (Atom,), {})
         cls.__module__ = self.__class__.__name__ # Is this kosher?
-        self.globals[atom] = cls
+        self.globals[atom_name] = cls
         return cls
 
     def get_atom(self, atom_name):
-        if atom_name in self.namespace:
+        if atom_name in self.globals:
             return self.globals[atom_name]
         try:
             builtin = getattr(builtins, atom_name)
