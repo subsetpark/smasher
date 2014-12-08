@@ -83,12 +83,15 @@ class Atoms:
 class Actor:
 
     atoms = []
+    initialized = False
 
     def __init__(self):
         self.namespace = None
-        for atom in self.atoms:
-            new_class = new_atom(atom)
-            setattr(self, atom, new_class)
+        if not self.initialized:
+            for atom in self.atoms:
+                new_class = new_atom(atom)
+                setattr(self, atom, new_class)
+            self.initialized = True
 
     def register(self, namespace):
         self.namespace = namespace
@@ -103,7 +106,6 @@ class Actor:
             if issubclass(builtin, Exception):
                 return builtin
         except AttributeError:
-            print(self.namespace.atom_names)
             raise AtomError('Atom {} not found.'.format(atom_name))
 
     def pass_atom(self, atom, *args):
