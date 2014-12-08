@@ -1,5 +1,5 @@
-import collections
 import builtins
+from utils import make_sequence
 
 
 class Atom(Exception):
@@ -16,16 +16,11 @@ class AtomError(Exception):
     pass
 
 
-def new_atom(atom):
-    return type(atom, (Atom,), {})
-
-
-def make_sequence(element):
-    if not isinstance(element, collections.Iterable):
-        return (element, )
-    elif not isinstance(element, tuple):
-        return tuple(element)
-    return element
+def new_atom(atom, origin=None):
+    cls = type(atom, (Atom,), {})
+    if origin is not None:
+        cls.__module__ = origin.__class__.__name__ # Is this kosher?
+    return cls
 
 
 def typecheck(payload, types):
@@ -75,7 +70,6 @@ class Atoms:
         self.globals = {}
         for atom in atoms:
             new_class = new_atom(atom)
-            setattr(self, atom, new_class)
             self.atom_names.append(atom)
             self.globals[a] = new_class
 
@@ -83,20 +77,22 @@ class Atoms:
 class Actor:
 
     atoms = []
-    initialized = False
+    initialize_map = {}
 
     def __init__(self):
+        self.atom_map = {}
         self.namespace = None
-        if not self.initialized:
+        if not self.initialize_map.get(self.__class__):
             for atom in self.atoms:
-                new_class = new_atom(atom)
-                setattr(self, atom, new_class)
-            self.initialized = True
+                new_class = new_atom(atom, origin=self)
+                self.atom_map[atom] = new_class
+            self.initialize_map[self.__class__] = True
+        print('{}, {}'.format(self.__class__.__name__, self.atom_map))
 
     def register(self, namespace):
         self.namespace = namespace
         namespace.atom_names.extend(self.atoms)
-        namespace.globals.update({a: getattr(self, a) for a in self.atoms})
+        namespace.globals.update({a: self.atom_map[a] for a in self.atoms})
 
     def get_atom(self, atom_name):
         if atom_name in self.namespace.atom_names:
@@ -108,11 +104,11 @@ class Actor:
         except AttributeError:
             raise AtomError('Atom {} not found.'.format(atom_name))
 
-    def pass_atom(self, atom, *args):
-        raise getattr(self, atom)(*args)
+    def pass_atom(self, atom_name, *args):
+        raise self.atom_map[atom_name](*args)
 
     def evaluate_msg(self, msg, *args, **kwargs):
-        if msg in self.namespace.atom_names:
+        if msg in self.atoms:
             self.pass_atom(msg)
         elif isinstance(msg, str):
             getattr(self, msg)(*args, **kwargs)
