@@ -1,22 +1,11 @@
 from atoms import Actor
 
-
-class Display(Actor):
-
-    @Actor.dispatch({'Result': ('display', int)})
-    def listen(self):
-        pass
-
-    def display(self, result):
-        print('Here is your computation: {}'.format(result))
-
-
 class Calc(Actor):
     atoms = ['Plus', 'Minus', 'Squared', 'Result']
 
     @Actor.dispatch({'Plus': ('add', int, int),
-                     'Minus': ('subtract', int, int)},
-                    listeners=[Display()])
+                     'Minus': ('subtract', int, int),
+                     'Result': ('display', int)})
     def calc(self):
         entry = input('> ')
         phrase = entry.split()
@@ -33,6 +22,8 @@ class Calc(Actor):
     def add(self, x, y):
         self.result(x + y)
 
+    def display(self, result):
+        print('Here is your computation: {}'.format(result))
 
 if __name__ == '__main__':
     Calc().calc()
