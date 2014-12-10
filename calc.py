@@ -1,9 +1,11 @@
 from atoms import Actor
 
+
 class Display(Actor):
 
     def display(self, result):
         print('Here is your computation: {}'.format(result))
+
 
 class Calc(Actor):
     atoms = ['Plus', 'Minus', 'Squared', 'Result']
@@ -11,7 +13,7 @@ class Calc(Actor):
     def __init__(self, display=None):
         super().__init__()
         self.display = display or Display()
-
+    # I want to have listeners!
     @Actor.dispatch({'Plus': ('add', int, int),
                      'Minus': ('subtract', int, int),
                      'Result': ('display.display', int)})

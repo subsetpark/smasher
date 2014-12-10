@@ -101,9 +101,12 @@ class Actor:
                     else:
                         args = ()
                     # Determine actor
-                    if '.' in route:
+                    if isinstance(route, str) and '.' in route:
                         parts = route.split('.')
-                        actor = getattr(self, parts[0])
+                        try:
+                            actor = getattr(self, parts[0])
+                        except AttributeError:
+                            raise AtomError('{} cannot dispatch to actor {}'.format(self, repr(parts[0])))
                         route = parts[1]
                     else:
                         actor = self
@@ -111,3 +114,6 @@ class Actor:
                     self.dispatch(entity_map)(self.__class__.evaluate_msg)(actor, route, *args)
             return wrapped
         return inner_wrapper
+
+    def __str__(self):
+        return 'Actor {}'.format(self.__class__.__name__)
