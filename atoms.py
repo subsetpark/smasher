@@ -6,11 +6,10 @@ class Atom(Exception):
 
     def __init__(self, *args):
         if args:
-            if len(args) > 1:
-                self.payload = args
-            else:
-                self.payload = args[0]
+            self.payload = args
 
+    def __str__(self):
+        return '{}{}'.format(self.__class__.__name__, ': {}'.format(self.payload) if self.payload else '')
 
 class AtomError(Exception):
     pass
@@ -20,12 +19,13 @@ def typecheck(payload, types):
     for arg, desired_type in zip(make_sequence(payload), make_sequence(types)):
         if desired_type:
             if not isinstance(arg, desired_type):
-                raise TypeError('Type mismatch for {}: got {}, excpected {}'.format(arg, type(5), desired_type))
+                raise TypeError('Type mismatch for {}: got {}, excpected {}'.format(repr(arg), type(arg), desired_type))
 
 class Actor:
     atoms = []
     _initialize_map = {}
     _globals = {}
+    _listeners = ()
 
     def __init__(self):
         self.atom_map = {}
@@ -58,20 +58,20 @@ class Actor:
 
     def evaluate_msg(self, msg, *args, **kwargs):
         if msg in self.atoms:
-            self.pass_atom(msg)
+            self.pass_atom(msg, *args)
         elif isinstance(msg, str):
             getattr(self, msg)(*args, **kwargs)
         else:
             msg(*args, **kwargs)
 
-    def pass_if(self, cond, true_atom, false_atom=None):
+    def pass_if(self, cond, true_atom, false_atom=None, args=()):
         if cond:
-            self.evaluate_msg(true_atom)
+            self.evaluate_msg(true_atom, *args)
         elif false_atom:
-            self.evaluate_msg(false_atom)
+            self.evaluate_msg(false_atom, *args)
 
     @staticmethod
-    def dispatch(entity_map):
+    def dispatch(entity_map, listeners=()):
         """
         This is the dispatch decorator designed 
         to be used on Actor methods.
@@ -96,7 +96,7 @@ class Actor:
                     if isinstance(route, tuple):
                         typecheck(exc.payload, route[1])
                         route = route[0]
-                        args = args + make_sequence(exc.payload)
+                        args = make_sequence(exc.payload)
                     else:
                         args = ()
                     self.dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
