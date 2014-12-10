@@ -93,12 +93,21 @@ class Actor:
                     func(self, *args, **kwargs)
                 except tuple(dispatch_map.keys()) as exc:
                     route = dispatch_map[exc.__class__]
+                    # Process route arguments                    
                     if isinstance(route, tuple):
                         typecheck(exc.payload, route[1])
                         route = route[0]
                         args = make_sequence(exc.payload)
                     else:
                         args = ()
-                    self.dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
+                    # Determine actor
+                    if '.' in route:
+                        parts = route.split('.')
+                        actor = getattr(self, parts[0])
+                        route = parts[1]
+                    else:
+                        actor = self
+
+                    self.dispatch(entity_map)(self.__class__.evaluate_msg)(actor, route, *args)
             return wrapped
         return inner_wrapper
