@@ -1,4 +1,4 @@
-from atoms import Actor, dispatch
+from atoms import Actor
 import random
 
 
@@ -16,10 +16,10 @@ class SimpleGame(Actor):
         print('Game points: {}'.format(self.points))
         self.take_a_guess()
 
-    @dispatch({('Wrong', 'ValueError'): 'take_a_guess',
-               'Correct': 'correct',
-               'KeepGoing': 'play_a_game',
-               'Guess': ('evaluate', int)})
+    @Actor.dispatch({('Wrong', 'ValueError'): 'take_a_guess',
+                      'Correct': 'correct',
+                      'KeepGoing': 'play_a_game',
+                      'Guess': ('evaluate', int)})
     def take_a_guess(self):
         self.server.get_guess()
 
@@ -53,16 +53,12 @@ class Server(Actor):
         self.player = player
         self.game = SimpleGame(self)
 
-    def register(self, namespace):
-        super().register(namespace)
-        self.game.register(namespace)
-
     def get_guess(self):
         self.player.guess()
 
-    @dispatch({'NewGame': 'new_game',
-               'GameOver': 'run',
-               'Finished': lambda: print('Good job!')})
+    @Actor.dispatch({'NewGame': 'new_game',
+                     'GameOver': 'run',
+                     'Finished': lambda: print('Good job!')})
     def run(self):
         self.player.start()
 

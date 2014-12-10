@@ -22,40 +22,6 @@ def typecheck(payload, types):
             if not isinstance(arg, desired_type):
                 raise TypeError('Type mismatch for {}: got {}, excpected {}'.format(arg, type(5), desired_type))
 
-
-def dispatch(entity_map):
-    """
-    This is the dispatch decorator designed 
-    to be used on Actor methods.
-    """
-    # Build list of atom names we're looking for
-    atom_map = {}
-    for entity in entity_map:
-        if isinstance(entity, str):
-            atom_map[entity] = entity_map[entity]
-        else:
-            for atom in entity:
-                atom_map[atom] = entity_map[entity]
-
-    def inner_wrapper(func):
-        def wrapped(self, *args, **kwargs):
-            # Validate dispatch
-            dispatch_map = {self.get_atom(atom_name): value for atom_name, value in atom_map.items()}
-            try:
-                func(self, *args, **kwargs)
-            except tuple(dispatch_map.keys()) as exc:
-                route = dispatch_map[exc.__class__]
-                if isinstance(route, tuple):
-                    typecheck(exc.payload, route[1])
-                    route = route[0]
-                    args = args + make_sequence(exc.payload)
-                else:
-                    args = ()
-                dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
-        return wrapped
-    return inner_wrapper
-
-
 class Actor:
     atoms = []
     _initialize_map = {}
@@ -103,3 +69,36 @@ class Actor:
             self.evaluate_msg(true_atom)
         elif false_atom:
             self.evaluate_msg(false_atom)
+
+    @staticmethod
+    def dispatch(entity_map):
+        """
+        This is the dispatch decorator designed 
+        to be used on Actor methods.
+        """
+        # Build list of atom names we're looking for
+        atom_map = {}
+        for entity in entity_map:
+            if isinstance(entity, str):
+                atom_map[entity] = entity_map[entity]
+            else:
+                for atom in entity:
+                    atom_map[atom] = entity_map[entity]
+
+        def inner_wrapper(func):
+            def wrapped(self, *args, **kwargs):
+                # Validate dispatch
+                dispatch_map = {self.get_atom(atom_name): value for atom_name, value in atom_map.items()}
+                try:
+                    func(self, *args, **kwargs)
+                except tuple(dispatch_map.keys()) as exc:
+                    route = dispatch_map[exc.__class__]
+                    if isinstance(route, tuple):
+                        typecheck(exc.payload, route[1])
+                        route = route[0]
+                        args = args + make_sequence(exc.payload)
+                    else:
+                        args = ()
+                    self.dispatch(entity_map)(self.__class__.evaluate_msg)(self, route, *args)
+            return wrapped
+        return inner_wrapper
